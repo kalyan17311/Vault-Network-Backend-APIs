@@ -77,7 +77,7 @@ def register_user(data: RegisterModel):
         response = supabase.table("users").insert({
             "username": data.username,
             "email": data.email,
-            "password": hashed_pw,
+            "password": data.password,
             "created_at": datetime.utcnow().isoformat()
         }).execute()
         
