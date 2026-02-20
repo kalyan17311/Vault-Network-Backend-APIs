@@ -66,11 +66,14 @@ class MiningModel(BaseModel):
 
 @app.post("/register")
 def register_user(data: RegisterModel):
+    if supabase is None:
+        return {"status": 402, "message": "Supabase client not initialized", "user": None}
+    
     try:
-        # Hash the password
-        hashed_pw = bcrypt.hashpw(data.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        # Hash the password using passlib
+        hashed_pw = bcrypt.hash(data.password)
         
-        # Insert into users table
+        # Insert into Supabase users table
         response = supabase.table("users").insert({
             "username": data.username,
             "email": data.email,
@@ -78,7 +81,11 @@ def register_user(data: RegisterModel):
             "created_at": datetime.utcnow().isoformat()
         }).execute()
         
-        return {"status": 200, "message": "User saved successfully", "user": {"username": data.username, "email": data.email}}
+        return {
+            "status": 200,
+            "message": "User saved successfully",
+            "user": {"username": data.username, "email": data.email}
+        }
     except Exception as e:
         return {"status": 402, "message": str(e), "user": None}
 # -----------------------
