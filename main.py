@@ -4,7 +4,7 @@ from supabase import create_client
 import os
 from dotenv import load_dotenv
 from passlib.hash import bcrypt
-from datetime import date
+from datetime import date, datetime
 import logging
 from typing import Optional
 
@@ -66,20 +66,21 @@ class MiningModel(BaseModel):
 
 @app.post("/register")
 def register_user(data: RegisterModel):
-    if supabase is None:
-        return {"status": 402, "message": "Supabase client not initialized", "user": None}
     try:
-        response = supabase.auth.sign_up({
+        # Hash the password
+        hashed_pw = bcrypt.hashpw(data.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        
+        # Insert into users table
+        response = supabase.table("users").insert({
+            "username": data.username,
             "email": data.email,
-            "password": data.password,
-            "options": {"data": {"username": data.username}}
-        })
-        user = getattr(response, "user", None)
-        return {"status": 200, "message": "User registered successfully", "user": user}
+            "password": hashed_pw,
+            "created_at": datetime.utcnow().isoformat()
+        }).execute()
+        
+        return {"status": 200, "message": "User saved successfully", "user": {"username": data.username, "email": data.email}}
     except Exception as e:
-        # Always return JSON even on server error
         return {"status": 402, "message": str(e), "user": None}
-
 # -----------------------
 # 2️⃣ Login API
 # -----------------------
