@@ -98,19 +98,18 @@ def login_user(data: LoginModel):
     if supabase is None:
         raise HTTPException(status_code=500, detail="Supabase client not initialized")
 
-    # Check for empty fields
     if not data.email.strip() or not data.password.strip():
         raise HTTPException(status_code=400, detail="Email and password cannot be empty")
 
     try:
         # 1️⃣ Search user by email
-        user_resp = supabase.table("Users").select("*").eq("email", data.email).execute()
+        user_resp = supabase.table("Users") \
+            .select("*") \
+            .eq("email", data.email) \
+            .execute()
 
-        if user_resp.error:
-            raise HTTPException(status_code=500, detail=f"Database error: {user_resp.error}")
-
+        # ✅ Correct way to check results
         if not user_resp.data or len(user_resp.data) == 0:
-            # Email not found
             raise HTTPException(status_code=401, detail="Email not found")
 
         user_record = user_resp.data[0]
@@ -120,18 +119,17 @@ def login_user(data: LoginModel):
         if not hashed_pw or not argon2.verify(data.password, hashed_pw):
             raise HTTPException(status_code=401, detail="Incorrect password")
 
-        # 3️⃣ Success — return user info (you can also generate your own token here if needed)
         return {
             "status": 200,
             "message": "Login successful",
-            "user": {
-                "username": user_record.get("username"),
-                "email": user_record.get("email")
-            }
+            "username": user_record.get("username"),
+            "email": user_record.get("email")
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # -----------------------
