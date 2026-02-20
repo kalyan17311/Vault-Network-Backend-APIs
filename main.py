@@ -67,34 +67,30 @@ class MiningModel(BaseModel):
 def register_user(data: RegisterModel):
     if supabase is None:
         return {
-            "status": 402,  # failure
+            "status": 402,
             "message": "Supabase client not initialized",
             "user": None
         }
+
     try:
         response = supabase.auth.sign_up({
             "email": data.email,
             "password": data.password,
-            "options": {
-                "data": {
-                    "username": data.username
-                }
-            }
+            "options": {"data": {"username": data.username}}
         })
 
-        user = getattr(response, "user", None)
-        return {
-            "status": 200,  # success
-            "message": "User registered successfully",
-            "user": user
-        }
+        # Check if signup failed
+        if getattr(response, "user", None) is None:
+            # Supabase error is in response.message
+            message = getattr(response, "message", "Unknown error")
+            return {"status": 402, "message": message, "user": None}
+
+        # Success
+        user = getattr(response, "user")
+        return {"status": 200, "message": "User registered successfully", "user": user}
 
     except Exception as e:
-        return {
-            "status": 402,  # failure
-            "message": str(e),
-            "user": None
-        }
+        return {"status": 402, "message": str(e), "user": None}
 
 
 # -----------------------
