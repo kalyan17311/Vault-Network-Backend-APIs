@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from supabase import create_client
 import os
 from dotenv import load_dotenv
+from passlib.hash import argon2
 from passlib.hash import bcrypt
 from datetime import date, datetime
 import logging
@@ -71,13 +72,13 @@ def register_user(data: RegisterModel):
     
     try:
         # Hash the password using passlib
-        hashed_pw = bcrypt.hash(data.password)
+        hashed_pw = argon2.hash(data.password)
         
         # Insert into Supabase users table
         response = supabase.table("users").insert({
             "username": data.username,
             "email": data.email,
-            "password": data.password,
+            "password": hashed_pw,
             "created_at": datetime.utcnow().isoformat()
         }).execute()
         
