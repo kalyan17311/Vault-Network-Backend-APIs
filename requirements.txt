@@ -1,3 +1,5 @@
+passlib[bcrypt]
+bcrypt
 fastapi
 uvicorn[standard]
 python-dotenv
