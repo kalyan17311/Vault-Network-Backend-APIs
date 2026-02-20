@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from supabase import create_client
 import os
 from dotenv import load_dotenv
+from passlib.hash import bcrypt
 from datetime import date
 import logging
 from typing import Optional
@@ -65,32 +66,23 @@ class MiningModel(BaseModel):
 
 @app.post("/register")
 def register_user(data: RegisterModel):
-    if supabase is None:
-        return {
-            "status": 402,
-            "message": "Supabase client not initialized",
-            "user": None
-        }
+    # Check if email/phone already exists
+    existing = supabase.table("users").select("*").eq("email", data.email).execute()
+    if existing.data:
+        return {"status": 402, "message": "Email already registered", "user": None}
 
-    try:
-        response = supabase.auth.sign_up({
-            "email": data.email,
-            "password": data.password,
-            "options": {"data": {"username": data.username}}
-        })
+    # Hash password
+    hashed_password = bcrypt.hash(data.password)
 
-        # Check if signup failed
-        if getattr(response, "user", None) is None:
-            # Supabase error is in response.message
-            message = getattr(response, "message", "Unknown error")
-            return {"status": 402, "message": message, "user": None}
+    # Insert user
+    result = supabase.table("users").insert({
+        "username": data.username,
+        "email": data.email,
+        "phone": data.phone,
+        "password": hashed_password
+    }).execute()
 
-        # Success
-        user = getattr(response, "user")
-        return {"status": 200, "message": "User registered successfully", "user": user}
-
-    except Exception as e:
-        return {"status": 402, "message": str(e), "user": None}
+    return {"status": 200, "message": "User registered successfully", "user": result.data[0]}
 
 
 # -----------------------
