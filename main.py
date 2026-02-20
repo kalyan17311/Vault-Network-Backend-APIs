@@ -75,7 +75,7 @@ def register_user(data: RegisterModel):
         hashed_pw = argon2.hash(data.password)
         
         # Insert into Supabase users table
-        response = supabase.table("users").insert({
+        response = supabase.table("Users").insert({
             "username": data.username,
             "email": data.email,
             "password": hashed_pw,
