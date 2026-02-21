@@ -8,6 +8,7 @@ from passlib.hash import bcrypt
 from datetime import date, datetime
 import logging
 from typing import Optional
+from pydantic import BaseModel, EmailStr
 
 load_dotenv()
 
@@ -55,10 +56,9 @@ class LoginModel(BaseModel):
 
 
 class MiningModel(BaseModel):
-    email: str
-    mine_clicked: bool
-    total_mined_coins: int
-    mined_date: date
+    email: EmailStr
+    total_mined_coins: float
+    mined_date: datetime
 
 
 # -----------------------
@@ -140,15 +140,21 @@ def login_user(data: LoginModel):
 def save_mining(data: MiningModel):
     if supabase is None:
         raise HTTPException(status_code=500, detail="Supabase client not initialized")
+
     try:
         response = supabase.table("mining_details").insert({
             "email": data.email,
-            "mine_clicked": data.mine_clicked,
             "total_mined_coins": data.total_mined_coins,
             "mined_date": data.mined_date.isoformat()
         }).execute()
 
-        return {"message": "Mining data saved successfully"}
+        if not response.data:
+            raise HTTPException(status_code=400, detail="Failed to insert mining data")
+
+        return {
+            "status": 200,
+            "message": "Mining data saved successfully"
+        }
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
