@@ -166,12 +166,28 @@ def save_mining(data: MiningModel):
 
 @app.get("/get-mining/{email}")
 def get_mining(email: str):
+    if supabase is None:
+        raise HTTPException(status_code=500, detail="Supabase client not initialized")
+
     try:
         response = supabase.table("mining_details") \
-            .select("*") \
+            .select("total_mined_coins, mined_date") \
             .eq("email", email) \
+            .order("mined_date", desc=True) \
             .execute()
-        return getattr(response, "data", [])
+
+        if not response.data:
+            return {
+                "status": 404,
+                "message": "No mining data found",
+                "data": []
+            }
+
+        return {
+            "status": 200,
+            "message": "Mining data fetched successfully",
+            "data": response.data
+        }
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
