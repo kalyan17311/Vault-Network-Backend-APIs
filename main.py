@@ -119,7 +119,7 @@ def register_user(data: RegisterModel):
         }).execute()
 
         # 3️⃣ If referral email exists
-        if data.referral_email:
+        if data.referral_code:
 
             ref_user = supabase.table("Users") \
                 .select("email") \
