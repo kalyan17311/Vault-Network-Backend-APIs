@@ -65,28 +65,81 @@ class MiningModel(BaseModel):
 # 1️⃣ Register API
 # -----------------------
 
+# @app.post("/register")
+# def register_user(data: RegisterModel):
+#     if supabase is None:
+#         return {"status": 402, "message": "Supabase client not initialized", "user": None}
+    
+#     try:
+#         # Hash the password using passlib
+#         hashed_pw = argon2.hash(data.password)
+        
+#         # Insert into Supabase users table
+#         response = supabase.table("Users").insert({
+#             "username": data.username,
+#             "email": data.email,
+#             "password": hashed_pw,
+#             "created_at": datetime.utcnow().isoformat()
+#         }).execute()
+        
+#         return {
+#             "status": 200,
+#             "message": "User saved successfully",
+#             "user": {"username": data.username, "email": data.email}
+#         }
+#     except Exception as e:
+#         return {"status": 402, "message": str(e), "user": None}
+
+
 @app.post("/register")
 def register_user(data: RegisterModel):
     if supabase is None:
         return {"status": 402, "message": "Supabase client not initialized", "user": None}
-    
+
     try:
-        # Hash the password using passlib
         hashed_pw = argon2.hash(data.password)
-        
-        # Insert into Supabase users table
+
+        # 1️⃣ Insert new user
         response = supabase.table("Users").insert({
             "username": data.username,
             "email": data.email,
             "password": hashed_pw,
             "created_at": datetime.utcnow().isoformat()
         }).execute()
-        
+
+        if not response.data:
+            return {"status": 400, "message": "User creation failed"}
+
+        # 2️⃣ Give 500 coins to NEW user (insert in mining_details)
+        supabase.table("mining_details").insert({
+            "email": data.email,
+            "total_mined_coins": 500,
+            "mined_date": datetime.utcnow().isoformat()
+        }).execute()
+
+        # 3️⃣ If referral email exists
+        if data.referral_email:
+
+            ref_user = supabase.table("Users") \
+                .select("email") \
+                .eq("email", data.referral_email) \
+                .execute()
+
+            if ref_user.data:
+
+                # Give 500 coins to REFERRAL user
+                supabase.table("mining_details").insert({
+                    "email": data.referral_email,
+                    "total_mined_coins": 500,
+                    "mined_date": datetime.utcnow().isoformat()
+                }).execute()
+
         return {
             "status": 200,
-            "message": "User saved successfully",
+            "message": "User registered successfully with referral bonus",
             "user": {"username": data.username, "email": data.email}
         }
+
     except Exception as e:
         return {"status": 402, "message": str(e), "user": None}
 # -----------------------
