@@ -48,6 +48,7 @@ class RegisterModel(BaseModel):
     username: str
     email: str
     password: str
+    referral_code: Optional[str] = None
 
 
 class LoginModel(BaseModel):
@@ -122,7 +123,7 @@ def register_user(data: RegisterModel):
 
             ref_user = supabase.table("Users") \
                 .select("email") \
-                .eq("email", data.referral_email) \
+                .eq("email", data.referral_code) \
                 .execute()
 
             if ref_user.data:
