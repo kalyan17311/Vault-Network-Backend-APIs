@@ -130,7 +130,7 @@ def register_user(data: RegisterModel):
 
                 # Give 500 coins to REFERRAL user
                 supabase.table("mining_details").insert({
-                    "email": data.referral_email,
+                    "email": data.referral_code,
                     "total_mined_coins": 500,
                     "mined_date": datetime.utcnow().isoformat()
                 }).execute()
