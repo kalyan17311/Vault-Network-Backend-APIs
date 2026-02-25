@@ -98,9 +98,22 @@ def register_user(data: RegisterModel):
         return {"status": 402, "message": "Supabase client not initialized", "user": None}
 
     try:
+        # ✅ 1️⃣ Check if user already exists
+        existing_user = supabase.table("Users") \
+            .select("email") \
+            .eq("email", data.email) \
+            .execute()
+
+        if existing_user.data:
+            return {
+                "status": 402,
+                "message": "User already exists",
+                "user": None
+            }
+
         hashed_pw = argon2.hash(data.password)
 
-        # 1️⃣ Insert new user
+        # ✅ 2️⃣ Insert new user
         response = supabase.table("Users").insert({
             "username": data.username,
             "email": data.email,
@@ -109,26 +122,23 @@ def register_user(data: RegisterModel):
         }).execute()
 
         if not response.data:
-            return {"status": 400, "message": "User creation failed"}
+            return {"status": 400, "message": "User creation failed", "user": None}
 
-        # 2️⃣ Give 500 coins to NEW user (insert in mining_details)
+        # ✅ 3️⃣ Give 500 coins to NEW user
         supabase.table("mining_details").insert({
             "email": data.email,
             "total_mined_coins": 500,
             "mined_date": datetime.utcnow().isoformat()
         }).execute()
 
-        # 3️⃣ If referral email exists
+        # ✅ 4️⃣ Referral bonus
         if data.referral_code:
-
             ref_user = supabase.table("Users") \
                 .select("email") \
                 .eq("email", data.referral_code) \
                 .execute()
 
             if ref_user.data:
-
-                # Give 500 coins to REFERRAL user
                 supabase.table("mining_details").insert({
                     "email": data.referral_code,
                     "total_mined_coins": 500,
